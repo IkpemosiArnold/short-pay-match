@@ -1,0 +1,9 @@
+{
+  "name": "short-pay-match",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Customer payments matched to their statement, with every short-payment checked against the signed delivery docket before a credit note is drafted.",
+  "scripts": { "test": "node --test" },
+  "license": "MIT"
+}
