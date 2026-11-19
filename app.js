@@ -110,7 +110,7 @@ function draftReply(p) {
 }
 
 function detail(p) {
-  const box = el("div", "evidence");
+  let box = el("div", "evidence");
   const st = rowStatus(p);
   box.append(el("p", "side-h", `Bank line ${p.bank.line}, ${shortDate(p.bank.date)}`));
   box.append(el("p", `side-title st-${st.cls}`, `${payer(p)}, ${money(p.bank.amount)}`));
@@ -156,8 +156,12 @@ function detail(p) {
     if (!d.docket) continue;
     const doc = dk.get(d.docket);
     const invc = inv.get(d.docket);
+    // Presentation only: the docket's own lines go on one sheet, and the signed note is set as handwriting.
+    const page = box;
+    box = el("div", "copy");
+    page.append(box);
     box.append(el("p", "ev-h", `Docket ${d.docket}, ${shortDate(invc.date)}, signed by ${doc.signed} at ${doc.at.slice(11)}`));
-    const q = el("p", "mail-body");
+    const q = el("p", "mail-body pod-note");
     q.append(marked(doc.note, [d.podSpan ? [...d.podSpan, "pass"] : [0, doc.note.length, "fail"]]));
     box.append(q);
     if (d.line) {
@@ -182,6 +186,7 @@ function detail(p) {
       box.append(line);
     }
     box.append(jumpBtn(`See docket ${d.docket}`, "dockets", { docket: d.docket }));
+    box = page;
   }
 
   if (p.proposal) {
@@ -239,8 +244,7 @@ function show(entry, animate = true) {
   const box = detail(entry.p);
   if (animate) box.classList.add("enter");
   entry.btn.setAttribute("aria-expanded", "true");
-  if (wide.matches) $("side").replaceChildren(box);
-  else entry.li.append(box);
+  entry.li.append(box);
   open = entry;
   if (animate) requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add("drawn")));
   else box.classList.add("drawn");
@@ -263,7 +267,9 @@ function rowItem(p) {
   s.append(icon(st.icon), st.word);
   const v = el("span", "val");
   v.append(el("b", null, payer(p)));
-  v.append(el("span", "amt", money(p.bank.amount)), ` · ${shortDate(p.bank.date)}`);
+  const when = el("span", "when");
+  when.append(el("span", "sep", " · "), shortDate(p.bank.date));
+  v.append(el("span", "amt", money(p.bank.amount)), when);
   let meta = p.headline;
   if (p.status === "credit") {
     const left = p.credits.filter((id) => !approved.has(id));
@@ -290,8 +296,10 @@ function renderSummary() {
   const s = res.summary;
   const left = res.credits.filter((c) => !approved.has(c.id)).length;
   const sum = $("summary");
+  const main = el("span", "sum-main");
+  main.append(el("span", "fig", `${s.settled} of ${s.payments}`), " ", el("span", "verb", left ? "can settle" : "payments settle"));
   sum.replaceChildren(
-    el("span", "sum-main", left ? `${s.settled} of ${s.payments} can settle` : `${s.settled} of ${s.payments} payments settle`),
+    main,
     el("span", "sum-side", left ? `${left} ${left === 1 ? "credit" : "credits"} to approve` : "Credits approved"),
     el("span", "sum-side muted", `${s.waits} wait for you`),
   );
